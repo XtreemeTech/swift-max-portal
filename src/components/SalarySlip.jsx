@@ -9,6 +9,13 @@ const formatCurrency = (value) => {
   })}`;
 };
 
+const formatDate = (dateString) => {
+  if (!dateString) return "-";
+  const date = new Date(dateString);
+  if (isNaN(date)) return dateString;
+  return date.toLocaleDateString();
+};
+
 const DetailedSalarySlip = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -40,36 +47,99 @@ const DetailedSalarySlip = () => {
   ];
 
   const handleDownload = async () => {
+    if (!slipRef.current || downloading) return;
+
     setDownloading(true);
 
-    const canvas = await html2canvas(slipRef.current, {
-      scale: 3,
-      useCORS: true,
-      backgroundColor: "#ffffff",
-      scrollY: -window.scrollY,
-    });
+    try {
+      const element = slipRef.current;
 
-    const imgData = canvas.toDataURL("image/png");
+      // Device-aware scale keeps text sharp on both mobile and desktop.
+      const captureScale = Math.max(2, Math.min(3, window.devicePixelRatio || 1));
 
-    const pdf = new jsPDF({
-      orientation: "portrait",
-      unit: "px",
-      format: [canvas.width, canvas.height],
-    });
+      const canvas = await html2canvas(element, {
+        scale: captureScale,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+        width: element.scrollWidth,
+        height: element.scrollHeight,
+        windowWidth: element.scrollWidth,
+        windowHeight: element.scrollHeight,
+        scrollX: 0,
+        scrollY: -window.scrollY,
+      });
 
-    pdf.addImage(imgData, "PNG", 0, 0, canvas.width, canvas.height);
-    pdf.save("SwiftMax-SalarySlip.pdf");
+      const pdf = new jsPDF("p", "mm", "a4");
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
 
-    setDownloading(false);
+      const canvasWidth = canvas.width;
+      const canvasHeight = canvas.height;
+
+      // Fit image to full page width.
+      const imgWidth = pageWidth;
+
+      let pageIndex = 0;
+
+      const pageCanvas = document.createElement("canvas");
+      const pageContext = pageCanvas.getContext("2d");
+
+      if (!pageContext) {
+        throw new Error("Unable to prepare PDF canvas context.");
+      }
+
+      // Pixel height for one PDF page slice.
+      const pageCanvasHeight = Math.floor((canvasWidth * pageHeight) / pageWidth);
+      pageCanvas.width = canvasWidth;
+      pageCanvas.height = pageCanvasHeight;
+
+      let renderedHeight = 0;
+
+      while (renderedHeight < canvasHeight) {
+        const sourceHeight = Math.min(pageCanvasHeight, canvasHeight - renderedHeight);
+        pageCanvas.height = sourceHeight;
+
+        pageContext.clearRect(0, 0, pageCanvas.width, sourceHeight);
+        pageContext.drawImage(
+          canvas,
+          0,
+          renderedHeight,
+          canvasWidth,
+          sourceHeight,
+          0,
+          0,
+          canvasWidth,
+          sourceHeight
+        );
+
+        const pageData = pageCanvas.toDataURL("image/png");
+        const renderedPageHeight = (sourceHeight * imgWidth) / canvasWidth;
+
+        if (pageIndex > 0) pdf.addPage();
+        pdf.addImage(pageData, "PNG", 0, 0, imgWidth, renderedPageHeight);
+
+        renderedHeight += sourceHeight;
+        pageIndex += 1;
+      }
+
+      pdf.save("SwiftMax-SalarySlip.pdf");
+    } catch (error) {
+      console.error("PDF generation failed:", error);
+    } finally {
+      setDownloading(false);
+    }
   };
 
-  return (
-    <div className="min-h-screen bg-gray-50 pt-24 px-4 sm:px-6 md:px-12 pb-10">
+  const isNegative = Number(rider.net_salary) < 0;
 
-      <div className="max-w-6xl mx-auto flex flex-col sm:flex-row justify-end gap-3 mb-6">
+  return (
+    <div className="min-h-screen bg-gray-100 pt-24 px-4 pb-12">
+
+      {/* Buttons */}
+      <div className="max-w-6xl mx-auto flex justify-end gap-3 mb-6">
         <button
           onClick={() => navigate("/")}
-          className="w-full sm:w-auto px-6 py-2 rounded-lg bg-gray-600 text-white font-semibold hover:bg-gray-700 transition"
+          className="px-5 py-2 rounded-lg bg-gray-600 text-white font-semibold"
         >
           Close
         </button>
@@ -77,148 +147,183 @@ const DetailedSalarySlip = () => {
         <button
           onClick={handleDownload}
           disabled={downloading}
-          className="w-full sm:w-auto px-6 py-2 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 transition shadow-md"
+          className="px-5 py-2 rounded-lg bg-blue-600 text-white font-semibold"
         >
-          {downloading ? "Downloading..." : "Download PDF"}
+          {downloading ? "Generating PDF..." : "Download PDF"}
         </button>
       </div>
 
+      {/* SLIP */}
       <div
         ref={slipRef}
-        className="bg-white max-w-6xl mx-auto rounded-2xl shadow-lg border border-gray-200 overflow-hidden"
+        className="bg-white text-gray-900 max-w-6xl mx-auto rounded-2xl shadow-2xl border border-gray-200 overflow-hidden"
       >
 
         {/* Header */}
-        <div className="p-6 sm:p-10 border-b border-gray-200 text-center">
-          <h1 className="flex justify-center items-baseline gap-2">
-            <span className="text-3xl sm:text-4xl font-extrabold text-red-600">
-              SWIFT
-            </span>
-            <span className="text-4xl sm:text-5xl font-extrabold text-slate-900">
-              MAX
-            </span>
+        <div className="p-8 border-b text-center bg-gradient-to-r from-gray-50 to-gray-100">
+          <h1 className="text-4xl font-extrabold tracking-wide">
+            <span className="text-red-600">SWIFT</span>{" "}
+            <span className="text-slate-900">MAX</span>
           </h1>
-          <p className="text-sm text-gray-500 mt-2 tracking-wider uppercase">
+          <p className="text-sm text-gray-500 mt-2 uppercase tracking-wider">
             Official Payroll Statement
           </p>
         </div>
 
-        {/* ✅ Updated Info Section */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 sm:p-8 border-b text-[14px]">
-
-          {/* Left Side */}
-          <div className="space-y-2 text-gray-900">
-            <p>
-              <span className="font-semibold text-gray-700">Rider ID:</span>{" "}
-              <span className="font-bold text-black">{rider.rider_id}</span>
-            </p>
-
-            <p>
-              <span className="font-semibold text-gray-700">Name:</span>{" "}
-              <span className="font-bold text-black">{rider.employee_name}</span>
-            </p>
-
-            <p>
-              <span className="font-semibold text-gray-700">Email:</span>{" "}
-              <span className="font-bold text-black">{rider.email || ""}</span>
-            </p>
+        {/* Info */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-8 border-b text-sm">
+          <div className="space-y-1">
+            <p><strong>Rider ID:</strong> {rider.rider_id}</p>
+            <p><strong>Name:</strong> {rider.employee_name}</p>
           </div>
-
-          {/* Right Side */}
-          <div className="space-y-2 md:text-right text-gray-900">
-
-            <p>
-              <span className="font-semibold text-gray-700">Employee A/C:</span>{" "}
-              <span className="font-bold text-black">{rider.employee_ac}</span>
-            </p>
-
-            {/* ✅ Vehicle Type Added */}
-            <p>
-              <span className="font-semibold text-gray-700">Vehicle Type:</span>{" "}
-              <span className="font-bold text-black">{rider.vehicle_type}</span>
-            </p>
-
-            <p>
-              <span className="font-semibold text-gray-700">Salary Month:</span>{" "}
-              <span className="font-bold text-black">{rider.salary_month_display}</span>
-            </p>
-
-            <p>
-              <span className="font-semibold text-gray-700">Generated On:</span>{" "}
-              <span className="font-bold text-black">
-                {new Date().toLocaleDateString()}
-              </span>
-            </p>
+          <div className="space-y-1 md:text-right">
+            <p><strong>Employee A/C:</strong> {rider.employee_ac}</p>
+            <p><strong>Vehicle Type:</strong> {rider.vehicle_type}</p>
+            <p><strong>Salary Month:</strong> {rider.salary_month_display}</p>
           </div>
         </div>
 
         {/* Earnings & Deductions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-6 sm:p-10">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 p-8">
 
+          {/* Earnings */}
           <div>
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-2 h-6 bg-emerald-600 rounded"></div>
-              <h2 className="text-xl font-bold text-emerald-700">Earnings</h2>
-            </div>
+            <h2 className="text-xl font-bold text-emerald-700 mb-4 border-l-4 border-emerald-600 pl-3">
+              Earnings
+            </h2>
 
             {earnings.map((item, idx) => (
-              <div key={idx} className="flex justify-between py-3 border-b border-gray-200 text-[14px] text-gray-800">
-                <span className="font-medium">{item.label}</span>
-                <span className="font-semibold text-gray-900">{item.value}</span>
+              <div key={idx} className="flex justify-between py-2 border-b text-sm">
+                <span>{item.label}</span>
+                <span>{item.value}</span>
               </div>
             ))}
 
-            <div className="flex justify-between mt-4 bg-emerald-100 text-emerald-900 p-3 rounded-xl font-bold">
+            <div className="flex justify-between mt-4 bg-emerald-100 p-4 rounded-xl font-bold text-lg">
               <span>Total Earnings</span>
               <span>{formatCurrency(rider.total_earnings)}</span>
             </div>
           </div>
 
+          {/* Deductions */}
           <div>
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-2 h-6 bg-red-600 rounded"></div>
-              <h2 className="text-xl font-bold text-red-700">Deductions</h2>
-            </div>
+            <h2 className="text-xl font-bold text-red-700 mb-4 border-l-4 border-red-600 pl-3">
+              Deductions
+            </h2>
 
             {deductions.map((item, idx) => (
-              <div key={idx} className="flex justify-between py-3 border-b border-gray-200 text-[14px] text-gray-800">
-                <span className="font-medium">{item.label}</span>
-                <span className="font-semibold text-gray-900">
-                  {formatCurrency(item.value)}
-                </span>
+              <div key={idx} className="flex justify-between py-2 border-b text-sm">
+                <span>{item.label}</span>
+                <span>{formatCurrency(item.value)}</span>
               </div>
             ))}
 
-            <div className="flex justify-between mt-4 bg-red-100 text-red-900 p-3 rounded-xl font-bold">
+            <div className="flex justify-between mt-4 bg-red-100 p-4 rounded-xl font-bold text-lg">
               <span>Total Deduction</span>
               <span>{formatCurrency(rider.total_deductions)}</span>
             </div>
           </div>
-
         </div>
 
-        {/* Net Salary */}
-        <div className="px-4 sm:px-10 pb-10">
-          <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-md">
-            <div className="flex flex-col sm:flex-row justify-between gap-4">
-              <div>
-                <p className="text-xs uppercase tracking-widest text-gray-500 font-semibold">
-                  Net Salary Payable
-                </p>
-                <p className="text-sm text-gray-600 mt-2">
-                  Final Amount After All Deductions
-                </p>
-              </div>
+        {/* CLAWBACK STYLISH */}
+        {rider.has_clawback && rider.clawback_entries?.length > 0 && (
+          <div className="px-8 pb-8">
 
-              <div className="text-left sm:text-right">
-                <p className="text-3xl sm:text-4xl font-extrabold text-gray-900">
-                  {formatCurrency(rider.net_salary)}
-                </p>
-                <div className="h-1 w-24 bg-emerald-500 mt-2 rounded-full"></div>
+            <h2 className="text-2xl font-bold text-orange-700 mb-6 border-l-4 border-orange-500 pl-3">
+              Clawback Details
+            </h2>
+
+            {/* Summary Card */}
+            <div className="bg-orange-50 border border-orange-200 rounded-2xl p-5 shadow-sm mb-8">
+              <div className="flex justify-between text-base font-semibold">
+                <span>Total Clawback Count</span>
+                <span>{rider.clawback_count}</span>
+              </div>
+              <div className="flex justify-between text-base font-semibold mt-3">
+                <span>Total Clawback Amount</span>
+                <span className="text-red-600">
+                  {formatCurrency(rider.clawback_total)}
+                </span>
               </div>
             </div>
+
+            {/* Individual Cards */}
+            {rider.clawback_entries.map((entry, index) => (
+              <div
+                key={entry.id}
+                className="bg-white border border-gray-200 rounded-2xl p-6 mb-8 shadow-md"
+              >
+                <p className="text-lg font-bold text-orange-600 mb-3">
+                  Clawback #{index + 1}
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                  <p><strong>ID:</strong> {entry.id}</p>
+                  <p><strong>City:</strong> {entry.city}</p>
+                  <p><strong>Vehicle:</strong> {entry.vehicle}</p>
+                  <p><strong>Order Date:</strong> {formatDate(entry.clawback_order_date)}</p>
+                  <p className="sm:col-span-2">
+                    <strong>Order ID:</strong> {entry.clawback_order_id}
+                  </p>
+                </div>
+
+                <div className="mt-4 bg-gray-50 border rounded-xl p-4 text-sm">
+                  <strong>Investigation Details:</strong>
+                  <p className="mt-2 whitespace-pre-line text-gray-700">
+                    {entry.clawback_remarks}
+                  </p>
+                </div>
+
+                <div className="flex justify-between mt-5 text-lg font-bold">
+                  <span>Amount</span>
+                  <span className="text-red-600">
+                    {formatCurrency(entry.amount)}
+                  </span>
+                </div>
+              </div>
+            ))}
+
+            <div className="flex justify-between bg-orange-100 p-5 rounded-2xl font-bold text-xl shadow-sm">
+              <span>Final Total Clawback</span>
+              <span className="text-red-700">
+                {formatCurrency(rider.clawback_total)}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* NET SALARY PROFESSIONAL */}
+        <div className="px-8 pb-8">
+          <div className="bg-gradient-to-r from-gray-50 to-white border rounded-2xl p-8 shadow-xl text-center sm:text-left">
+            <p className="uppercase text-xs tracking-widest text-gray-500 font-semibold">
+              Net Salary Payable
+            </p>
+
+            <p
+              className={`mt-4 text-4xl sm:text-5xl font-extrabold ${
+                isNegative ? "text-red-600" : "text-gray-900"
+              }`}
+            >
+              {formatCurrency(rider.net_salary)}
+            </p>
+
+            <div className="h-1 w-32 mx-auto sm:mx-0 mt-4 bg-emerald-500 rounded-full"></div>
           </div>
         </div>
+
+        {/* NOTES SECTION */}
+        {rider.notes && rider.notes.trim() !== "" && (
+          <div className="px-8 pb-12">
+            <div className="bg-yellow-50 border border-yellow-300 rounded-2xl p-6 shadow-sm">
+              <h3 className="text-lg font-bold text-yellow-800 mb-3">
+                Important Notes
+              </h3>
+              <p className="text-sm text-yellow-900 whitespace-pre-line leading-relaxed">
+                {rider.notes}
+              </p>
+            </div>
+          </div>
+        )}
 
       </div>
     </div>

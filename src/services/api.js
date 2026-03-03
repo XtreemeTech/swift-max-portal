@@ -89,7 +89,7 @@ export const publicAPI = {
 // ===============================
 export const adminAPI = {
 
-  // 📊 NEW Analytics Endpoint
+  // 📊 Analytics
   getAnalytics: async () => {
     const response = await fetch(
       `${API_BASE_URL}/api/admin/analytics/`,
@@ -108,13 +108,40 @@ export const adminAPI = {
     return data;
   },
 
-  // 📂 Upload Salary File
-  uploadSalary: async (file, salaryMonth) => {
+
+  // 📂 Upload Salary File (UPDATED VERSION)
+  uploadSalary: async (file, clawbackFile, salaryMonth, notes) => {
     const token = localStorage.getItem("access_token");
 
+    if (!token) {
+      throw new Error("No access token found. Please login again.");
+    }
+
+    if (!file) {
+      throw new Error("Salary file is required.");
+    }
+
+    if (!salaryMonth) {
+      throw new Error("Salary month is required.");
+    }
+
     const formData = new FormData();
+
+    // Required salary file
     formData.append("file", file);
+
+    // Optional clawback file
+    if (clawbackFile) {
+      formData.append("clawback_file", clawbackFile);
+    }
+
+    // Required month (must be YYYY-MM or YYYY-MM-DD)
     formData.append("salary_month", salaryMonth);
+
+    // Optional notes
+    if (notes && notes.trim() !== "") {
+      formData.append("notes", notes.trim());
+    }
 
     const response = await fetch(
       `${API_BASE_URL}/api/admin/upload/`,
@@ -136,6 +163,7 @@ export const adminAPI = {
     return data;
   },
 
+
   // 📜 Get Upload History
   getUploads: async () => {
     const response = await fetch(
@@ -155,6 +183,7 @@ export const adminAPI = {
     return data;
   },
 
+
   // 📄 Get Upload Details
   getUploadDetails: async (uploadId) => {
     const response = await fetch(
@@ -173,6 +202,7 @@ export const adminAPI = {
 
     return data;
   },
+
 
   // ❌ Delete Upload
   deleteUpload: async (uploadId) => {
