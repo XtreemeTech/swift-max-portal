@@ -2,6 +2,7 @@ import React, { useRef, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
+import swiftMaxLogo from "../assets/swift max.png";
 
 const formatCurrency = (value) => {
   return `AED ${Number(value || 0).toLocaleString("en-US", {
@@ -33,6 +34,10 @@ const DetailedSalarySlip = () => {
     { label: "COD Deductions", value: rider.cod_deductions },
     { label: "Order Issue Deductions", value: rider.order_issue_deductions },
     { label: "Salaries - OID", value: rider.salaries_oid },
+
+    { label: "Pickup Cancel", value: rider.pickup_cancel },
+    { label: "Dropoff Cancel", value: rider.dropoff_cancel },
+
     { label: "Fine", value: rider.fine },
     { label: "Salik", value: rider.salik },
     { label: "Extra Sim Used", value: rider.safe_extra_sim_used },
@@ -54,7 +59,6 @@ const DetailedSalarySlip = () => {
     try {
       const element = slipRef.current;
 
-      // Device-aware scale keeps text sharp on both mobile and desktop.
       const captureScale = Math.max(2, Math.min(3, window.devicePixelRatio || 1));
 
       const canvas = await html2canvas(element, {
@@ -76,7 +80,6 @@ const DetailedSalarySlip = () => {
       const canvasWidth = canvas.width;
       const canvasHeight = canvas.height;
 
-      // Fit image to full page width.
       const imgWidth = pageWidth;
 
       let pageIndex = 0;
@@ -88,7 +91,6 @@ const DetailedSalarySlip = () => {
         throw new Error("Unable to prepare PDF canvas context.");
       }
 
-      // Pixel height for one PDF page slice.
       const pageCanvasHeight = Math.floor((canvasWidth * pageHeight) / pageWidth);
       pageCanvas.width = canvasWidth;
       pageCanvas.height = pageCanvasHeight;
@@ -153,22 +155,42 @@ const DetailedSalarySlip = () => {
         </button>
       </div>
 
-      {/* SLIP */}
       <div
         ref={slipRef}
         className="bg-white text-gray-900 max-w-6xl mx-auto rounded-2xl shadow-2xl border border-gray-200 overflow-hidden"
+        style={{ WebkitFontSmoothing: "antialiased", textRendering: "geometricPrecision" }}
       >
 
         {/* Header */}
-        <div className="p-8 border-b text-center bg-gradient-to-r from-gray-50 to-gray-100">
-          <h1 className="text-4xl font-extrabold tracking-wide">
-            <span className="text-red-600">SWIFT</span>{" "}
-            <span className="text-slate-900">MAX</span>
-          </h1>
-          <p className="text-sm text-gray-500 mt-2 uppercase tracking-wider">
-            Official Payroll Statement
-          </p>
+        <div className="p-8 border-b text-center bg-white">
+
+          <div className="bg-white rounded-xl p-4 inline-block">
+            <img
+              src={swiftMaxLogo}
+              alt="Swift Max Delivery"
+              className="h-40 md:h-48 w-auto mx-auto object-contain"
+              draggable={false}
+            />
+          </div>
+
         </div>
+
+        {/* NOTES SECTION */}
+        {rider.notes && rider.notes.trim() !== "" && (
+          <div className="px-8 pt-6 pb-2 border-b bg-gray-50">
+            <div className="rounded-xl border-l-4 border-blue-600 bg-white p-6 shadow-sm">
+              <div className="flex items-center gap-3 mb-3">
+                <span className="h-3 w-3 rounded-full bg-blue-600"></span>
+                <h3 className="text-base font-bold tracking-wide text-gray-800 uppercase">
+                  Important Note
+                </h3>
+              </div>
+              <p className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">
+                {rider.notes}
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Info */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-8 border-b text-sm">
@@ -211,12 +233,18 @@ const DetailedSalarySlip = () => {
               Deductions
             </h2>
 
-            {deductions.map((item, idx) => (
-              <div key={idx} className="flex justify-between py-2 border-b text-sm">
-                <span>{item.label}</span>
-                <span>{formatCurrency(item.value)}</span>
-              </div>
-            ))}
+{deductions.map((item, idx) => (
+  <div key={idx} className="flex justify-between py-2 border-b text-sm">
+    <span>{item.label}</span>
+
+    <span>
+      {item.label === "Pickup Cancel" || item.label === "Dropoff Cancel"
+        ? item.value
+        : formatCurrency(item.value)}
+    </span>
+
+  </div>
+))}
 
             <div className="flex justify-between mt-4 bg-red-100 p-4 rounded-xl font-bold text-lg">
               <span>Total Deduction</span>
@@ -233,7 +261,6 @@ const DetailedSalarySlip = () => {
               Clawback Details
             </h2>
 
-            {/* Summary Card */}
             <div className="bg-orange-50 border border-orange-200 rounded-2xl p-5 shadow-sm mb-8">
               <div className="flex justify-between text-base font-semibold">
                 <span>Total Clawback Count</span>
@@ -247,7 +274,6 @@ const DetailedSalarySlip = () => {
               </div>
             </div>
 
-            {/* Individual Cards */}
             {rider.clawback_entries.map((entry, index) => (
               <div
                 key={entry.id}
@@ -284,7 +310,7 @@ const DetailedSalarySlip = () => {
             ))}
 
             <div className="flex justify-between bg-orange-100 p-5 rounded-2xl font-bold text-xl shadow-sm">
-              <span>Final Total Clawback</span>
+              <span>Final Total Clawback Amount</span>
               <span className="text-red-700">
                 {formatCurrency(rider.clawback_total)}
               </span>
@@ -292,7 +318,7 @@ const DetailedSalarySlip = () => {
           </div>
         )}
 
-        {/* NET SALARY PROFESSIONAL */}
+        {/* NET SALARY */}
         <div className="px-8 pb-8">
           <div className="bg-gradient-to-r from-gray-50 to-white border rounded-2xl p-8 shadow-xl text-center sm:text-left">
             <p className="uppercase text-xs tracking-widest text-gray-500 font-semibold">
@@ -310,20 +336,6 @@ const DetailedSalarySlip = () => {
             <div className="h-1 w-32 mx-auto sm:mx-0 mt-4 bg-emerald-500 rounded-full"></div>
           </div>
         </div>
-
-        {/* NOTES SECTION */}
-        {rider.notes && rider.notes.trim() !== "" && (
-          <div className="px-8 pb-12">
-            <div className="bg-yellow-50 border border-yellow-300 rounded-2xl p-6 shadow-sm">
-              <h3 className="text-lg font-bold text-yellow-800 mb-3">
-                Important Notes
-              </h3>
-              <p className="text-sm text-yellow-900 whitespace-pre-line leading-relaxed">
-                {rider.notes}
-              </p>
-            </div>
-          </div>
-        )}
 
       </div>
     </div>
