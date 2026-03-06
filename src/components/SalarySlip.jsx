@@ -28,15 +28,14 @@ const DetailedSalarySlip = () => {
   const earnings = [
     { label: "Pickup Count", value: rider.pickup_count },
     { label: "DropOff Count", value: rider.dropoff_count },
+        { label: "Pickup Cancel", value: rider.pickup_cancel },
+    { label: "Dropoff Cancel", value: rider.dropoff_cancel },
   ];
 
   const deductions = [
     { label: "COD Deductions", value: rider.cod_deductions },
     { label: "Order Issue Deductions", value: rider.order_issue_deductions },
     { label: "Salaries - OID", value: rider.salaries_oid },
-
-    { label: "Pickup Cancel", value: rider.pickup_cancel },
-    { label: "Dropoff Cancel", value: rider.dropoff_cancel },
 
     { label: "Fine", value: rider.fine },
     { label: "Salik", value: rider.salik },
