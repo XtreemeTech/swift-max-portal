@@ -25,30 +25,12 @@ const DetailedSalarySlip = () => {
 
   const rider = location.state || {};
 
-  const earnings = [
-    { label: "Pickup Count", value: rider.pickup_count },
-    { label: "DropOff Count", value: rider.dropoff_count },
-        { label: "Pickup Cancel", value: rider.pickup_cancel },
-    { label: "Dropoff Cancel", value: rider.dropoff_cancel },
-  ];
+  const earningsObj = rider.earnings || {};
+  const earningsTotal = earningsObj["Total"] ?? rider.total_earnings;
+  const earningsRows = Object.entries(earningsObj).filter(([key]) => key !== "Total");
 
-  const deductions = [
-    { label: "COD Deductions", value: rider.cod_deductions },
-    { label: "Order Issue Deductions", value: rider.order_issue_deductions },
-    { label: "Salaries - OID", value: rider.salaries_oid },
-
-    { label: "Fine", value: rider.fine },
-    { label: "Salik", value: rider.salik },
-    { label: "Extra Sim Used", value: rider.safe_extra_sim_used },
-    { label: "Insurance", value: rider.insurance },
-    { label: "Advance", value: rider.advance },
-    { label: "Negative Salary", value: rider.negative_salary },
-    { label: "RTA Class", value: rider.rta_class },
-    { label: "Labour Card", value: rider.labour_card },
-    { label: "Others", value: rider.others },
-    { label: "Non Performance Fine", value: rider.non_performance_fine },
-    { label: "Fine Performance", value: rider.fine_performance },
-  ];
+  const deductionsObj = rider.deductions || {};
+  const deductionsRows = Object.entries(deductionsObj);
 
   const handleDownload = async () => {
     if (!slipRef.current || downloading) return;
@@ -213,16 +195,16 @@ const DetailedSalarySlip = () => {
               Earnings
             </h2>
 
-            {earnings.map((item, idx) => (
+            {earningsRows.map(([label, value], idx) => (
               <div key={idx} className="flex justify-between py-2 border-b text-sm">
-                <span>{item.label}</span>
-                <span>{item.value}</span>
+                <span>{label}</span>
+                <span>{value}</span>
               </div>
             ))}
 
             <div className="flex justify-between mt-4 bg-emerald-100 p-4 rounded-xl font-bold text-lg">
               <span>Total Earnings</span>
-              <span>{formatCurrency(rider.total_earnings)}</span>
+              <span>{earningsTotal !== undefined ? earningsTotal : "-"}</span>
             </div>
           </div>
 
@@ -232,18 +214,12 @@ const DetailedSalarySlip = () => {
               Deductions
             </h2>
 
-{deductions.map((item, idx) => (
-  <div key={idx} className="flex justify-between py-2 border-b text-sm">
-    <span>{item.label}</span>
-
-    <span>
-      {item.label === "Pickup Cancel" || item.label === "Dropoff Cancel"
-        ? item.value
-        : formatCurrency(item.value)}
-    </span>
-
-  </div>
-))}
+            {deductionsRows.map(([label, value], idx) => (
+              <div key={idx} className="flex justify-between py-2 border-b text-sm">
+                <span>{label}</span>
+                <span>{formatCurrency(value)}</span>
+              </div>
+            ))}
 
             <div className="flex justify-between mt-4 bg-red-100 p-4 rounded-xl font-bold text-lg">
               <span>Total Deduction</span>
@@ -284,18 +260,18 @@ const DetailedSalarySlip = () => {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                   <p><strong>ID:</strong> {entry.id}</p>
-                  <p><strong>City:</strong> {entry.city}</p>
-                  <p><strong>Vehicle:</strong> {entry.vehicle}</p>
-                  <p><strong>Order Date:</strong> {formatDate(entry.clawback_order_date)}</p>
+                  <p><strong>City:</strong> {entry.extra_data?.City || "-"}</p>
+                  <p><strong>Vehicle:</strong> {entry.extra_data?.Vehicle || "-"}</p>
+                  <p><strong>Order Date:</strong> {formatDate(entry.extra_data?.["Clawback Order Date (Date)"])}</p>
                   <p className="sm:col-span-2">
-                    <strong>Order ID:</strong> {entry.clawback_order_id}
+                    <strong>Order ID:</strong> {entry.extra_data?.["Clawback Order ID"] || "-"}
                   </p>
                 </div>
 
                 <div className="mt-4 bg-gray-50 border rounded-xl p-4 text-sm">
                   <strong>Investigation Details:</strong>
                   <p className="mt-2 whitespace-pre-line text-gray-700">
-                    {entry.clawback_remarks}
+                    {entry.extra_data?.["Clawback Remarks"] || "-"}
                   </p>
                 </div>
 
