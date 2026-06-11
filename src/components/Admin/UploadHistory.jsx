@@ -199,7 +199,7 @@ export default function UploadHistory({ refreshTrigger }) {
                 <div>#</div>
                 <div>Rider ID</div>
                 <div>Name</div>
-                <div className="text-right">Net Salary</div>
+                <div className="text-right">Net Wage</div>
                 <div className="text-center">Clawback</div>
               </div>
             </div>

@@ -22,12 +22,12 @@ export default function FileUpload({ onUploadSuccess }) {
     e.preventDefault();
 
     if (!salaryFile && !clawbackFile) {
-      setError("Please upload at least one file (Salary or Clawback).");
+      setError("Please upload at least one file (Wage or Clawback).");
       return;
     }
 
     if (!month) {
-      setError("Please select salary month.");
+      setError("Please select wage month.");
       return;
     }
 
@@ -77,7 +77,7 @@ export default function FileUpload({ onUploadSuccess }) {
     >
 
       <h2 className="text-2xl font-semibold mb-8">
-        Upload Salary / Clawback Data
+        Upload Wage / Clawback Data
       </h2>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -85,7 +85,7 @@ export default function FileUpload({ onUploadSuccess }) {
         {/* Month */}
         <div>
           <label className="block text-sm font-medium mb-2">
-            Salary Month
+            Wage Month
           </label>
           <input
             type="month"
@@ -126,7 +126,7 @@ export default function FileUpload({ onUploadSuccess }) {
             htmlFor="salaryUpload"
             className="inline-block bg-blue-600 text-white px-5 py-2 rounded-lg cursor-pointer text-sm"
           >
-            Select Salary File
+            Select Wage File
           </label>
 
           {salaryFile && (

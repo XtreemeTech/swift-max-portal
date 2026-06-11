@@ -105,7 +105,7 @@ const DetailedSalarySlip = () => {
         pageIndex += 1;
       }
 
-      pdf.save("SwiftMax-SalarySlip.pdf");
+      pdf.save("SwiftMax-WageSlip.pdf");
     } catch (error) {
       console.error("PDF generation failed:", error);
     } finally {
@@ -182,7 +182,7 @@ const DetailedSalarySlip = () => {
           <div className="space-y-1 md:text-right">
             <p><strong>Employee A/C:</strong> {rider.employee_ac}</p>
             <p><strong>Vehicle Type:</strong> {rider.vehicle_type}</p>
-            <p><strong>Salary Month:</strong> {rider.salary_month_display}</p>
+            <p><strong>Wage Month:</strong> {rider.salary_month_display}</p>
           </div>
         </div>
 
@@ -297,7 +297,7 @@ const DetailedSalarySlip = () => {
         <div className="px-8 pb-8">
           <div className="bg-gradient-to-r from-gray-50 to-white border rounded-2xl p-8 shadow-xl text-center sm:text-left">
             <p className="uppercase text-xs tracking-widest text-gray-500 font-semibold">
-              Net Salary Payable
+              Net Wage Payable
             </p>
 
             <p

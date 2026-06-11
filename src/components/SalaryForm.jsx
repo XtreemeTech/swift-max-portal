@@ -170,7 +170,7 @@ const SalaryForm = () => {
                 </>
               ) : (
                 <>
-                  VIEW SALARY SLIP
+                  VIEW WAGE SLIP
                   <ArrowRight size={18} />
                 </>
               )}

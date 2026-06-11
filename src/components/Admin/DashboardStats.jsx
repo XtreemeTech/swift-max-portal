@@ -75,7 +75,7 @@ export default function DashboardStats({ refreshTrigger }) {
 
         <div className="bg-white p-6 rounded-2xl border shadow-sm">
           <p className="text-sm text-gray-500">
-            Salary Paid (Last Month)
+            Wages Paid (Last Month)
           </p>
           <h2 className="text-2xl font-bold mt-2 text-gray-900">
             AED {Number(data.salary_paid_last_month).toLocaleString()}
@@ -115,7 +115,7 @@ export default function DashboardStats({ refreshTrigger }) {
         {/* Monthly Salary Comparison */}
         <div className="bg-white p-8 rounded-2xl border shadow-sm">
           <h3 className="text-lg font-semibold text-gray-900 mb-6">
-            Monthly Salary Comparison
+            Monthly Wage Comparison
           </h3>
 
           <div className="h-64">
