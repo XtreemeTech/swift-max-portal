@@ -1,33 +1,29 @@
 import { useState } from "react";
 import { UploadCloud, Loader2, X } from "lucide-react";
 import { adminAPI } from "../../services/api";
+import DateInputDDMMYYYY from "../DateInputDDMMYYYY";
 
 export default function FileUpload({ onUploadSuccess }) {
 
   const [salaryFile, setSalaryFile] = useState(null);
   const [clawbackFile, setClawbackFile] = useState(null);
-  const [month, setMonth] = useState("");
+  const [statementDate, setStatementDate] = useState("");
   const [notes, setNotes] = useState("");
+  const [watermark, setWatermark] = useState("");
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [error, setError] = useState("");
-
-  const formatSalaryMonth = (value) => {
-    if (!value) return "";
-    const [year, month] = value.split("-");
-    return `${year}-${month}-01`;
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!salaryFile && !clawbackFile) {
-      setError("Please upload at least one file (Wage or Clawback).");
+      setError("Please upload at least one file (Statement or Clawback).");
       return;
     }
 
-    if (!month) {
-      setError("Please select wage month.");
+    if (!statementDate) {
+      setError("Please select statement date.");
       return;
     }
 
@@ -36,13 +32,12 @@ export default function FileUpload({ onUploadSuccess }) {
       setError("");
       setSuccessMessage("");
 
-      const formattedMonth = formatSalaryMonth(month);
-
       const result = await adminAPI.uploadSalary(
         salaryFile,
         clawbackFile,
-        formattedMonth,
-        notes
+        statementDate,
+        notes,
+        watermark
       );
 
       setSuccessMessage(
@@ -51,8 +46,9 @@ export default function FileUpload({ onUploadSuccess }) {
 
       setSalaryFile(null);
       setClawbackFile(null);
-      setMonth("");
+      setStatementDate("");
       setNotes("");
+      setWatermark("");
 
       if (onUploadSuccess) onUploadSuccess();
 
@@ -65,7 +61,7 @@ export default function FileUpload({ onUploadSuccess }) {
 
   return (
     <div
-      className="bg-white border border-gray-200 rounded-2xl p-8 max-w-3xl mx-auto shadow-lg text-gray-900"
+      className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-8 max-w-3xl mx-auto shadow-lg text-gray-900"
       style={{
         opacity: 1,
         filter: "none",
@@ -77,23 +73,26 @@ export default function FileUpload({ onUploadSuccess }) {
     >
 
       <h2 className="text-2xl font-semibold mb-8">
-        Upload Wage / Clawback Data
+        Upload Statement / Clawback Data
       </h2>
 
       <form onSubmit={handleSubmit} className="space-y-6">
 
-        {/* Month */}
+        {/* Statement Date */}
         <div>
           <label className="block text-sm font-medium mb-2">
-            Wage Month
+            Statement Date
           </label>
-          <input
-            type="month"
-            value={month}
-            onChange={(e) => setMonth(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:ring-2 focus:ring-blue-500"
-            required
+          <DateInputDDMMYYYY
+            value={statementDate}
+            onChange={setStatementDate}
+            disabled={loading}
+            className="w-full min-h-[48px] border border-gray-300 rounded-lg px-4 py-3 text-base text-gray-900 focus-within:ring-2 focus-within:ring-blue-500 outline-none"
           />
+          <p className="mt-2 text-xs text-gray-500 leading-relaxed">
+            Enter date as DD/MM/YYYY. You can upload multiple statements in the same
+            month using different dates (e.g. 01/07/2026 and 10/07/2026).
+          </p>
         </div>
 
         {/* Notes */}
@@ -108,6 +107,23 @@ export default function FileUpload({ onUploadSuccess }) {
             placeholder="Write remarks for this upload..."
             className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:ring-2 focus:ring-blue-500"
           />
+        </div>
+
+        {/* Watermark */}
+        <div>
+          <label className="block text-sm font-medium mb-2">
+            Watermark (Optional)
+          </label>
+          <input
+            type="text"
+            value={watermark}
+            onChange={(e) => setWatermark(e.target.value)}
+            placeholder="e.g. CONFIDENTIAL, Swift Max, January 2028"
+            className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:ring-2 focus:ring-blue-500"
+          />
+          <p className="mt-2 text-xs text-gray-500">
+            This text will appear as a background watermark on rider statements for this month.
+          </p>
         </div>
 
         {/* Salary File */}
@@ -126,7 +142,7 @@ export default function FileUpload({ onUploadSuccess }) {
             htmlFor="salaryUpload"
             className="inline-block bg-blue-600 text-white px-5 py-2 rounded-lg cursor-pointer text-sm"
           >
-            Select Wage File
+            Select Statement File
           </label>
 
           {salaryFile && (

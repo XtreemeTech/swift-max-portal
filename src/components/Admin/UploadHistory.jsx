@@ -9,6 +9,7 @@ import {
   Loader2
 } from "lucide-react";
 import { adminAPI } from "../../services/api";
+import { formatUploadedAt, isoToDisplay } from "../../utils/dateFormat";
 
 export default function UploadHistory({ refreshTrigger }) {
 
@@ -103,11 +104,11 @@ export default function UploadHistory({ refreshTrigger }) {
           <table className="w-full text-sm">
             <thead className="bg-gray-100 text-gray-900">
               <tr>
-                <th className="p-3 text-left font-semibold">Month</th>
+                <th className="p-3 text-left font-semibold">Statement Date</th>
                 <th className="p-3 text-left font-semibold">Records</th>
                 <th className="p-3 text-left font-semibold">Clawbacks</th>
                 <th className="p-3 text-left font-semibold">Uploaded By</th>
-                <th className="p-3 text-left font-semibold">Date</th>
+                <th className="p-3 text-left font-semibold">Uploaded On</th>
                 <th className="p-3 text-left font-semibold">Status</th>
                 <th className="p-3 text-right font-semibold">Actions</th>
               </tr>
@@ -115,8 +116,8 @@ export default function UploadHistory({ refreshTrigger }) {
             <tbody>
               {uploads.map((upload) => (
                 <tr key={upload.id} className="border-b hover:bg-gray-50">
-                  <td className="p-3 font-semibold">
-                    {upload.salary_month_display}
+                  <td className="p-3 font-semibold whitespace-nowrap">
+                    {isoToDisplay(upload.salary_month) || upload.salary_month_display}
                   </td>
                   <td className="p-3">
                     {upload.total_records}
@@ -127,8 +128,8 @@ export default function UploadHistory({ refreshTrigger }) {
                   <td className="p-3">
                     {upload.uploaded_by_name}
                   </td>
-                  <td className="p-3">
-                    {new Date(upload.uploaded_at).toLocaleDateString()}
+                  <td className="p-3 whitespace-nowrap">
+                    {formatUploadedAt(upload.uploaded_at)}
                   </td>
                   <td className="p-3">
                     {upload.status === "processed" ? (
@@ -168,8 +169,13 @@ export default function UploadHistory({ refreshTrigger }) {
             <div className="p-6 border-b bg-gradient-to-r from-gray-50 to-white flex justify-between items-start">
               <div>
                 <h2 className="text-xl font-bold">
-                  {selectedUpload?.salary_month_display}
+                  Statement: {isoToDisplay(selectedUpload?.salary_month) || selectedUpload?.salary_month_display}
                 </h2>
+                {selectedUpload?.uploaded_at && (
+                  <p className="text-sm text-gray-500 mt-1">
+                    Uploaded on {formatUploadedAt(selectedUpload.uploaded_at)}
+                  </p>
+                )}
                 {selectedUpload?.notes && (
                   <p className="text-sm text-gray-600 mt-2">
                     Notes: {selectedUpload.notes}
@@ -199,7 +205,7 @@ export default function UploadHistory({ refreshTrigger }) {
                 <div>#</div>
                 <div>Rider ID</div>
                 <div>Name</div>
-                <div className="text-right">Net Wage</div>
+                <div className="text-right">Net Payable</div>
                 <div className="text-center">Clawback</div>
               </div>
             </div>

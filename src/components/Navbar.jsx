@@ -27,7 +27,7 @@ const Navbar = () => {
             </h1>
 
             <p className="text-[9px] sm:text-[10px] text-gray-200 uppercase tracking-widest">
-              Wage Transparency System
+              Rider Transparency System
             </p>
           </div>
 

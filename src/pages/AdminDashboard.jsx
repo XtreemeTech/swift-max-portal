@@ -44,7 +44,7 @@ const AdminDashboard = () => {
         {/* Upload Section */}
         <div className="bg-white rounded-2xl shadow-sm border p-8">
           <h2 className="text-lg font-semibold mb-6 text-gray-900">
-            Upload Monthly Wage File
+            Upload Monthly Data
           </h2>
 
           <FileUpload onUploadSuccess={handleUploadSuccess} />

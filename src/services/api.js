@@ -76,7 +76,7 @@ export const publicAPI = {
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.detail || "Salary not found");
+      throw new Error(data.detail || "Statement not found");
     }
 
     return data;
@@ -110,7 +110,7 @@ export const adminAPI = {
 
 
   // 📂 Upload Salary File (UPDATED VERSION)
-  uploadSalary: async (file, clawbackFile, salaryMonth, notes) => {
+  uploadSalary: async (file, clawbackFile, salaryMonth, notes, watermark) => {
     const token = localStorage.getItem("access_token");
 
     if (!token) {
@@ -118,11 +118,11 @@ export const adminAPI = {
     }
 
     if (!file) {
-      throw new Error("Salary file is required.");
+      throw new Error("Statement file is required.");
     }
 
     if (!salaryMonth) {
-      throw new Error("Salary month is required.");
+      throw new Error("Statement date is required.");
     }
 
     const formData = new FormData();
@@ -141,6 +141,11 @@ export const adminAPI = {
     // Optional notes
     if (notes && notes.trim() !== "") {
       formData.append("notes", notes.trim());
+    }
+
+    // Optional watermark text for salary slips
+    if (watermark && watermark.trim() !== "") {
+      formData.append("watermark", watermark.trim());
     }
 
     const response = await fetch(

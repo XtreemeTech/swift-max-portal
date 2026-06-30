@@ -49,9 +49,9 @@ export default function DashboardStats({ refreshTrigger }) {
   }));
 
   // 🔥 Format Bar Chart Data
-  const salaryComparison = data.monthly_salary_comparison.map((item) => ({
+  const monthlyComparison = data.monthly_salary_comparison.map((item) => ({
     month: `${item.month} ${item.year}`,
-    total_salary: Number(item.total_salary),
+    total_paid: Number(item.total_salary),
   }));
 
   return (
@@ -75,7 +75,7 @@ export default function DashboardStats({ refreshTrigger }) {
 
         <div className="bg-white p-6 rounded-2xl border shadow-sm">
           <p className="text-sm text-gray-500">
-            Wages Paid (Last Month)
+            Total Paid (Last Month)
           </p>
           <h2 className="text-2xl font-bold mt-2 text-gray-900">
             AED {Number(data.salary_paid_last_month).toLocaleString()}
@@ -112,21 +112,21 @@ export default function DashboardStats({ refreshTrigger }) {
           </div>
         </div>
 
-        {/* Monthly Salary Comparison */}
+        {/* Monthly Comparison */}
         <div className="bg-white p-8 rounded-2xl border shadow-sm">
           <h3 className="text-lg font-semibold text-gray-900 mb-6">
-            Monthly Wage Comparison
+            Monthly Comparison
           </h3>
 
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={salaryComparison}>
+              <BarChart data={monthlyComparison}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                 <XAxis dataKey="month" stroke="#6B7280" />
                 <YAxis stroke="#6B7280" />
-                <Tooltip />
+                <Tooltip formatter={(value) => [`AED ${Number(value).toLocaleString()}`, "Total Paid"]} />
                 <Bar
-                  dataKey="total_salary"
+                  dataKey="total_paid"
                   fill="#10B981"
                   barSize={30}
                   radius={[8, 8, 0, 0]}

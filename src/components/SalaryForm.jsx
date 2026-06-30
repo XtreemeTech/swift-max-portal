@@ -9,40 +9,34 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { publicAPI } from '../services/api';
+import DateInputDDMMYYYY from './DateInputDDMMYYYY';
 
 const SalaryForm = () => {
   const [formData, setFormData] = useState({
     riderId: '',
     email: '',
-    month: '', // will store YYYY-MM
+    statementDate: '',
   });
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  // Convert YYYY-MM → YYYY-MM-01
-  const formatMonthForBackend = (monthValue) => {
-    return `${monthValue}-01`;
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
-    if (!formData.riderId || !formData.month) {
-      setError('Please enter Rider ID and select month');
+    if (!formData.riderId || !formData.statementDate) {
+      setError('Please enter Rider ID and select statement date');
       return;
     }
 
     try {
       setLoading(true);
 
-      const formattedMonth = formatMonthForBackend(formData.month);
-
       const response = await publicAPI.viewSalary(
         formData.riderId,
-        formattedMonth
+        formData.statementDate
       );
 
       navigate('/slip', {
@@ -71,7 +65,7 @@ const SalaryForm = () => {
           </h2>
 
           <h3 className="mt-3 text-lg font-bold text-slate-700">
-            Payslip Portal
+            Rider Portal
           </h3>
 
           <p className="text-slate-500 text-[10px] mt-2 uppercase tracking-widest font-medium">
@@ -106,26 +100,28 @@ const SalaryForm = () => {
               </div>
             </div>
 
-            {/* Month Picker */}
+            {/* Statement Date */}
             <div>
               <label className="text-[11px] font-semibold text-slate-600 uppercase">
-                Statement Month *
+                Statement Date *
               </label>
 
               <div className="relative mt-2">
                 <Calendar size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
 
-                <input
-                  type="month"
-                  required
-                  value={formData.month}
-                  onChange={(e) =>
-                    setFormData({ ...formData, month: e.target.value })
+                <DateInputDDMMYYYY
+                  value={formData.statementDate}
+                  onChange={(isoDate) =>
+                    setFormData({ ...formData, statementDate: isoDate })
                   }
                   disabled={loading}
-                  className="w-full border border-slate-300 rounded-2xl py-3 pl-11 pr-4 text-sm text-slate-900 font-semibold focus:border-red-500 focus:ring-4 focus:ring-red-100 outline-none appearance-none"
+                  className="w-full min-h-[48px] border border-slate-300 rounded-2xl py-3 pl-11 pr-4 text-base text-slate-900 font-semibold focus-within:border-red-500 focus-within:ring-4 focus-within:ring-red-100 outline-none"
                 />
               </div>
+
+              <p className="mt-2 text-[11px] text-slate-500 leading-relaxed">
+                Enter date as DD/MM/YYYY (e.g. 01/07/2026 or 10/07/2026).
+              </p>
             </div>
 
             {/* Email */}
@@ -170,7 +166,7 @@ const SalaryForm = () => {
                 </>
               ) : (
                 <>
-                  VIEW WAGE SLIP
+                  VIEW STATEMENT
                   <ArrowRight size={18} />
                 </>
               )}

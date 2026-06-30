@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import swiftMaxLogo from "../assets/swift max.png";
+import { isoToDisplay } from "../utils/dateFormat";
 
 const formatCurrency = (value) => {
   return `AED ${Number(value || 0).toLocaleString("en-US", {
@@ -15,6 +16,32 @@ const formatDate = (dateString) => {
   const date = new Date(dateString);
   if (isNaN(date)) return dateString;
   return date.toLocaleDateString();
+};
+
+const WatermarkOverlay = ({ text }) => {
+  if (!text?.trim()) return null;
+
+  const tiles = Array.from({ length: 48 }, (_, index) => index);
+
+  return (
+    <div
+      className="pointer-events-none absolute inset-0 z-30 overflow-hidden select-none"
+      aria-hidden="true"
+    >
+      <div className="absolute left-1/2 top-1/2 w-[300%] -translate-x-1/2 -translate-y-1/2 -rotate-[35deg] py-12">
+        <div className="flex flex-wrap items-center justify-center gap-x-20 gap-y-20 opacity-[0.14]">
+          {tiles.map((tile) => (
+            <span
+              key={tile}
+              className="inline-block w-[18%] min-w-[6.5rem] whitespace-nowrap text-center text-lg font-bold uppercase tracking-[0.12em] text-slate-600 sm:text-xl lg:text-2xl"
+            >
+              {text}
+            </span>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 };
 
 const DetailedSalarySlip = () => {
@@ -105,7 +132,7 @@ const DetailedSalarySlip = () => {
         pageIndex += 1;
       }
 
-      pdf.save("SwiftMax-WageSlip.pdf");
+      pdf.save("SwiftMax-Statement.pdf");
     } catch (error) {
       console.error("PDF generation failed:", error);
     } finally {
@@ -138,9 +165,12 @@ const DetailedSalarySlip = () => {
 
       <div
         ref={slipRef}
-        className="bg-white text-gray-900 max-w-6xl mx-auto rounded-2xl shadow-2xl border border-gray-200 overflow-hidden"
+        className="relative bg-white text-gray-900 max-w-6xl mx-auto rounded-2xl shadow-2xl border border-gray-200 overflow-hidden"
         style={{ WebkitFontSmoothing: "antialiased", textRendering: "geometricPrecision" }}
       >
+        <WatermarkOverlay text={rider.watermark} />
+
+        <div className="relative">
 
         {/* Header */}
         <div className="p-8 border-b text-center bg-white">
@@ -182,7 +212,7 @@ const DetailedSalarySlip = () => {
           <div className="space-y-1 md:text-right">
             <p><strong>Employee A/C:</strong> {rider.employee_ac}</p>
             <p><strong>Vehicle Type:</strong> {rider.vehicle_type}</p>
-            <p><strong>Wage Month:</strong> {rider.salary_month_display}</p>
+            <p><strong>Statement Date:</strong> {isoToDisplay(rider.salary_month) || rider.salary_month_display}</p>
           </div>
         </div>
 
@@ -293,11 +323,11 @@ const DetailedSalarySlip = () => {
           </div>
         )}
 
-        {/* NET SALARY */}
+        {/* NET PAYABLE */}
         <div className="px-8 pb-8">
           <div className="bg-gradient-to-r from-gray-50 to-white border rounded-2xl p-8 shadow-xl text-center sm:text-left">
             <p className="uppercase text-xs tracking-widest text-gray-500 font-semibold">
-              Net Wage Payable
+              Net Payable
             </p>
 
             <p
@@ -312,6 +342,7 @@ const DetailedSalarySlip = () => {
           </div>
         </div>
 
+        </div>
       </div>
     </div>
   );
