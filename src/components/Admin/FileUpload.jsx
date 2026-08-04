@@ -12,13 +12,14 @@ export default function FileUpload({ onUploadSuccess }) {
   const [watermark, setWatermark] = useState("");
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const [warnings, setWarnings] = useState([]);
   const [error, setError] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!salaryFile && !clawbackFile) {
-      setError("Please upload at least one file (Statement or Clawback).");
+    if (!salaryFile) {
+      setError("Please select the Statement file. The Clawback file is optional.");
       return;
     }
 
@@ -31,6 +32,7 @@ export default function FileUpload({ onUploadSuccess }) {
       setLoading(true);
       setError("");
       setSuccessMessage("");
+      setWarnings([]);
 
       const result = await adminAPI.uploadSalary(
         salaryFile,
@@ -40,9 +42,26 @@ export default function FileUpload({ onUploadSuccess }) {
         watermark
       );
 
-      setSuccessMessage(
-        `Upload successful • Records: ${result.total_records || 0} • Clawbacks: ${result.clawback_records_imported || 0}`
+      const clawbackCount = result.clawback_records_imported || 0;
+      // Showing the imported total makes a mis-read amount column obvious
+      // straight away, instead of surfacing as AED 0.00 on rider slips.
+      const clawbackTotal = Number(result.clawback_total_amount || 0).toLocaleString(
+        "en-US",
+        { minimumFractionDigits: 2, maximumFractionDigits: 2 }
       );
+
+      setSuccessMessage(
+        `Upload successful • Records: ${result.total_records || 0}` +
+          (clawbackCount > 0
+            ? ` • Clawbacks: ${clawbackCount} (AED ${clawbackTotal})`
+            : " • Clawbacks: 0")
+      );
+
+      // Rows the parser had to skip — worth showing so nothing goes unnoticed
+      setWarnings([
+        ...(result.parse_errors || []),
+        ...(result.clawback_errors || []),
+      ]);
 
       setSalaryFile(null);
       setClawbackFile(null);
@@ -220,8 +239,21 @@ export default function FileUpload({ onUploadSuccess }) {
           </div>
         )}
 
+        {warnings.length > 0 && (
+          <div className="mt-2 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+            <p className="font-semibold mb-2">
+              {warnings.length} row{warnings.length > 1 ? "s were" : " was"} skipped:
+            </p>
+            <ul className="list-disc pl-5 space-y-1 max-h-40 overflow-y-auto">
+              {warnings.map((warning, index) => (
+                <li key={index}>{warning}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         {error && (
-          <div className="text-red-600 text-sm font-medium mt-2">
+          <div className="text-red-600 text-sm font-medium mt-2 whitespace-pre-line">
             {error}
           </div>
         )}

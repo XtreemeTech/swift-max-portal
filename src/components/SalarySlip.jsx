@@ -6,16 +6,62 @@ import swiftMaxLogo from "../assets/swift max.png";
 import { isoToDisplay } from "../utils/dateFormat";
 
 const formatCurrency = (value) => {
-  return `AED ${Number(value || 0).toLocaleString("en-US", {
+  if (value === null || value === undefined || value === "") return "-";
+  const amount = Number(value);
+  // Non-numeric cells are shown as-is rather than as a misleading AED 0.00
+  if (Number.isNaN(amount)) return String(value);
+  return `AED ${amount.toLocaleString("en-US", {
     minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   })}`;
 };
 
 const formatDate = (dateString) => {
-  if (!dateString) return "-";
-  const date = new Date(dateString);
-  if (isNaN(date)) return dateString;
-  return date.toLocaleDateString();
+  if (dateString === null || dateString === undefined || dateString === "") return "-";
+  // Exported dates carry narrow/non-breaking spaces (e.g. "Jul 1, 2026, 10:34:54 PM")
+  // which stop the browser from parsing them.
+  const text = String(dateString)
+    .replace(/[\u00a0\u202f\u2007\u2009\u200a]/g, " ")
+    .replace(/[\u200b\ufeff]/g, "")
+    .trim();
+  const date = new Date(text);
+  if (isNaN(date.getTime())) return text;
+  return date.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
+
+// Clawback columns holding long free-text explanations — kept in sync with the
+// backend so the split still works if the API only returns extra_data.
+const CLAWBACK_REMARK_HINTS = ["remark", "investigation", "comment", "description"];
+
+const splitClawbackEntry = (entry) => {
+  if (entry.details || entry.remarks) {
+    return { details: entry.details || {}, remarks: entry.remarks || {} };
+  }
+
+  const details = {};
+  const remarks = {};
+
+  Object.entries(entry.extra_data || {}).forEach(([label, value]) => {
+    if (value === null || value === undefined || value === "") return;
+    const normalized = label.trim().toLowerCase();
+    if (CLAWBACK_REMARK_HINTS.some((hint) => normalized.includes(hint))) {
+      remarks[label] = value;
+    } else {
+      details[label] = value;
+    }
+  });
+
+  return { details, remarks };
+};
+
+const formatDetailValue = (label, value) => {
+  if (value === null || value === undefined || value === "") return "-";
+  if (/date|time/i.test(label)) return formatDate(value);
+  return String(value);
 };
 
 const WatermarkOverlay = ({ text }) => {
@@ -269,7 +315,7 @@ const DetailedSalarySlip = () => {
             <div className="bg-orange-50 border border-orange-200 rounded-2xl p-5 shadow-sm mb-8">
               <div className="flex justify-between text-base font-semibold">
                 <span>Total Clawback Count</span>
-                <span>{rider.clawback_count}</span>
+                <span>{rider.clawback_count ?? rider.clawback_entries.length}</span>
               </div>
               <div className="flex justify-between text-base font-semibold mt-3">
                 <span>Total Clawback Amount</span>
@@ -279,40 +325,53 @@ const DetailedSalarySlip = () => {
               </div>
             </div>
 
-            {rider.clawback_entries.map((entry, index) => (
-              <div
-                key={entry.id}
-                className="bg-white border border-gray-200 rounded-2xl p-6 mb-8 shadow-md"
-              >
-                <p className="text-lg font-bold text-orange-600 mb-3">
-                  Clawback #{index + 1}
-                </p>
+            {rider.clawback_entries.map((entry, index) => {
+              // Whatever columns the clawback file carries are rendered as-is,
+              // so a renamed or newly added heading still shows up on the slip.
+              const { details, remarks } = splitClawbackEntry(entry);
+              const detailRows = Object.entries(details);
+              const remarkRows = Object.entries(remarks);
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                  <p><strong>ID:</strong> {entry.id}</p>
-                  <p><strong>City:</strong> {entry.extra_data?.City || "-"}</p>
-                  <p><strong>Vehicle:</strong> {entry.extra_data?.Vehicle || "-"}</p>
-                  <p><strong>Order Date:</strong> {formatDate(entry.extra_data?.["Clawback Order Date (Date)"])}</p>
-                  <p className="sm:col-span-2">
-                    <strong>Order ID:</strong> {entry.extra_data?.["Clawback Order ID"] || "-"}
+              return (
+                <div
+                  key={entry.id ?? index}
+                  className="bg-white border border-gray-200 rounded-2xl p-6 mb-8 shadow-md"
+                >
+                  <p className="text-lg font-bold text-orange-600 mb-3">
+                    Clawback #{index + 1}
                   </p>
-                </div>
 
-                <div className="mt-4 bg-gray-50 border rounded-xl p-4 text-sm">
-                  <strong>Investigation Details:</strong>
-                  <p className="mt-2 whitespace-pre-line text-gray-700">
-                    {entry.extra_data?.["Clawback Remarks"] || "-"}
-                  </p>
-                </div>
+                  {detailRows.length > 0 && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                      {detailRows.map(([label, value]) => (
+                        <p key={label}>
+                          <strong>{label}:</strong> {formatDetailValue(label, value)}
+                        </p>
+                      ))}
+                    </div>
+                  )}
 
-                <div className="flex justify-between mt-5 text-lg font-bold">
-                  <span>Amount</span>
-                  <span className="text-red-600">
-                    {formatCurrency(entry.amount)}
-                  </span>
+                  {remarkRows.map(([label, value]) => (
+                    <div
+                      key={label}
+                      className="mt-4 bg-gray-50 border rounded-xl p-4 text-sm"
+                    >
+                      <strong>{label}:</strong>
+                      <p className="mt-2 whitespace-pre-line text-gray-700">
+                        {String(value)}
+                      </p>
+                    </div>
+                  ))}
+
+                  <div className="flex justify-between mt-5 text-lg font-bold">
+                    <span>Amount</span>
+                    <span className="text-red-600">
+                      {formatCurrency(Math.abs(Number(entry.amount) || 0))}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
 
             <div className="flex justify-between bg-orange-100 p-5 rounded-2xl font-bold text-xl shadow-sm">
               <span>Final Total Clawback Amount</span>
